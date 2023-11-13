@@ -20,6 +20,7 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
+	url2 "net/url"
 	"os"
 	"strings"
 	"time"
@@ -33,6 +34,7 @@ import (
 
 var port int
 var token string
+var proxyURL string
 
 func init() {
 	const (
@@ -43,6 +45,7 @@ func init() {
 	flag.IntVar(&port, "port", defaultPort, usage)
 	flag.IntVar(&port, "p", defaultPort, usage)
 	flag.StringVar(&token, "token", "", "set the access token for /translate endpoint")
+	flag.StringVar(&proxyURL, "proxyURL", "", "set the proxy for /translate endpoint")
 
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 }
@@ -241,13 +244,28 @@ func main() {
 		request.Header.Set("Accept-Language", "en-US,en;q=0.9")
 		request.Header.Set("Accept-Encoding", "gzip, deflate, br")
 		request.Header.Set("x-app-device", "iPhone13,2")
+		request.Header.Set("x-app-device", "iPhone13,2")
 		request.Header.Set("User-Agent", "DeepL-iOS/2.9.1 iOS 16.3.0 (iPhone13,2)")
 		request.Header.Set("x-app-build", "510265")
 		request.Header.Set("x-app-version", "2.9.1")
 		request.Header.Set("Connection", "keep-alive")
 
 		// Making the HTTP request to the DeepL API
-		client := &http.Client{}
+		var client *http.Client
+		if proxyURL != "" {
+			proxy, err := url2.Parse(proxyURL)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			client = &http.Client{
+				Transport: &http.Transport{
+					Proxy: http.ProxyURL(proxy),
+				},
+			}
+		} else {
+			client = &http.Client{}
+		}
 		resp, err := client.Do(request)
 		if err != nil {
 			log.Println(err)
